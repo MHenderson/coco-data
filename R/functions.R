@@ -1,8 +1,5 @@
-# Your custom code is a bunch of functions.
-create_plot <- function(data) {
-  ggplot(data) +
-    geom_histogram(aes(x = Ozone), binwidth = 10) +
-    theme_gray(24)
+get_raw_text <- function(shortcode) {
+  unlist(lapply(list.files(file.path(corpora_path, shortcode), pattern = "*.txt", full.names = TRUE), readLines))
 }
 
 coco_tibble <- function(works, left, right, fdr, span) {
