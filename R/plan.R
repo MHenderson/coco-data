@@ -1,36 +1,42 @@
 # The workflow plan data frame outlines what you are going to do.
 plan <- drake_plan(
-  raw_data = list(
-    "DNov" = unlist(lapply(list.files(file.path(corpora_path, "DNov"), pattern = "*.txt", full.names = TRUE), readLines)),
-    "19C" = unlist(lapply(list.files(file.path(corpora_path, "19C"), pattern = "*.txt", full.names = TRUE), readLines)),
-    "AAW" = unlist(lapply(list.files(file.path(corpora_path, "AAW"), pattern = "*.txt", full.names = TRUE), readLines)),
-    "ArTs" = unlist(lapply(list.files(file.path(corpora_path, "ArTs"), pattern = "*.txt", full.names = TRUE), readLines)),
-    "ChiLit" = unlist(lapply(list.files(file.path(corpora_path, "ChiLit"), pattern = "*.txt", full.names = TRUE), readLines))
+  raw_text = list(
+    "DNov" = get_raw_text("DNov"),
+    "19C" = get_raw_text("19C"),
+    "AAW" = get_raw_text("AAW"),
+    "ArTs" = get_raw_text("ArTs"),
+    "ChiLit" = get_raw_text("ChiLit")
   ),
-  works =  raw_data %>%
-    purrr::map(purrr::compose(unlist, purrr::compose(stringi::stri_extract_all_words, stringi::stri_trans_tolower))),
+  works =  raw_text %>%
+    map(compose(unlist, compose(stri_extract_all_words, stri_trans_tolower))),
   arguments = tibble(
     left = names(works),
-    right = names(works)
-  ) %>%
+    right = names(works)) %>%
     expand(
       left,
       right,
       fdr = c(0.01, 0.02),
-      span = purrr::cross2(1:5, 1:5) %>% purrr::map(unlist) %>% purrr::map_chr(to_span_string)
+      span = cross2(1:5, 1:5) %>%
+        map(unlist) %>%
+        map_chr(to_span_string)
     ),
   nested_results = arguments %>%
     filter(left != right) %>%
-    mutate(results = purrr::pmap(., purrr::partial(coco_tibble, works = works))),
+    mutate(results = pmap(., partial(coco_tibble, works = works))),
   results = nested_results %>%
-    tidyr::unnest(cols = c(results)) %>%
-    dplyr::mutate(
-      label = purrr::map2_chr(
+    unnest(cols = c(results)) %>%
+    mutate(
+      label = map2_chr(
         x,
         y,
-        ~ paste(format(.x, justify = "right", width = 10), format(.y, justify = "left", width = 10))
+        ~ paste(format(.x, justify = "right", width = 10),
+                format(.y, justify = "left", width = 10))
       )
     ),
-  results_csv = readr::write_csv(results, path = "results.csv")
-  
+  results_csv = write_csv(results, path = "results.csv"),
+  report = rmarkdown::render(
+    knitr_in("report.Rmd"),
+    output_file = file_out("report.html"),
+    quiet = TRUE
+  )
 )
