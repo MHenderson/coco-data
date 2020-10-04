@@ -3,5 +3,7 @@
 # but you do not need to load them here.
 library(drake)
 require(dplyr)
-require(ggplot2)
+library(purrr)
+library(readr)
+library(stringi)
 library(tidyr)
