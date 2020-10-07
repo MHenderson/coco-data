@@ -19,3 +19,5 @@ make(plan, parallelism = "clustermq", jobs = 4)
 
 #future::plan(future::multiprocess)
 #make(plan, parallelism = "future", jobs = 4)
+
+#make(plan)

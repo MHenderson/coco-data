@@ -7,12 +7,22 @@ plan <- drake_plan(
     "ArTs" = get_raw_text("ArTs"),
     "ChiLit" = get_raw_text("ChiLit")
   ),
-  arguments_ = arguments_df(),
-  results_ = target(
-    go_coco(arguments_, raw_text),
-    dynamic = map(arguments_)
+  left = c("DNov", "19C", "AAW", "ArTs", "ChiLit"),
+  right = c("DNov", "19C", "AAW", "ArTs", "ChiLit"),
+  fdr = seq(0.01, 0.05, .01),
+  span_left = 1:5,
+  span_right = 1:5,
+  results = target(
+    coco_tibble(
+      works = raw_text,
+      left = left,
+      right = right,
+      fdr = fdr,
+      span = to_span_string(c(span_left, span_right))
+    ),
+    dynamic = cross(left, right, fdr, span_left, span_right)
   ),
-  results_csv = write_csv(results_, path = "results.csv"),
+  results_csv = write_csv(results, path = "results.csv"),
   report = rmarkdown::render(
     knitr_in("report.Rmd"),
     output_file = file_out("report.html"),

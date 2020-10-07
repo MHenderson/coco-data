@@ -9,6 +9,7 @@ get_raw_text <- function(shortcode) {
     unlist()
 }
 
+# this function needs to return the inputs as well, as new columns
 coco_tibble <- function(works, left, right, fdr, span) {
   surface_coco(
     a = works[[left]],
@@ -16,7 +17,8 @@ coco_tibble <- function(works, left, right, fdr, span) {
     fdr = fdr,
     span = span,
     nodes = c('back', 'eye', 'eyes', 'forehead', 'hand', 'hands', 'head', 'shoulder')
-  )
+  ) %>%
+  mutate(left = left, right = right, fdr = fdr, span = span)
 }
 
 to_span_string <- function(x){
@@ -27,28 +29,4 @@ to_span_string <- function(x){
     result <- paste0(x[1], "L", x[2], "R")
   }
   return(result)
-}
-
-arguments <- function(corpora, fdr, span) {
-  tibble(left = corpora, right = corpora) %>%
-    expand(
-      left,
-      right,
-      fdr = fdr,
-      span = cross2(span, span) %>%
-        map(unlist) %>%
-        map_chr(to_span_string)
-    ) %>%
-    filter(left != right)
-}
-
-arguments_df <- function() {
-  arguments(c("DNov", "19C", "AAW", "ArTs", "ChiLit"), seq(0.01, 0.05, .01), 1:5) %>%
-    split(f = .$left)
-}
-
-go_coco <- function(x, y) {
-  x[[1]] %>%
-    mutate(results = pmap(., partial(coco_tibble, works = y))) %>%
-    unnest(cols = c(results))
 }
