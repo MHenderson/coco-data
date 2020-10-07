@@ -7,32 +7,21 @@ plan <- drake_plan(
     "ArTs" = get_raw_text("ArTs"),
     "ChiLit" = get_raw_text("ChiLit")
   ),
-  works =  raw_text %>%
-    map(compose(unlist, compose(stri_extract_all_words, stri_trans_tolower))),
-  arguments = tibble(
-    left = names(works),
-    right = names(works)) %>%
-    expand(
-      left,
-      right,
-      fdr = c(0.01, 0.02),
-      span = cross2(1:5, 1:5) %>%
-        map(unlist) %>%
-        map_chr(to_span_string)
+  left = c("DNov", "19C", "AAW", "ArTs", "ChiLit"),
+  right = c("DNov", "19C", "AAW", "ArTs", "ChiLit"),
+  fdr = seq(0.01, 0.05, .01),
+  span_left = 1:5,
+  span_right = 1:5,
+  results = target(
+    coco_tibble(
+      works = raw_text,
+      left = left,
+      right = right,
+      fdr = fdr,
+      span = to_span_string(c(span_left, span_right))
     ),
-  nested_results = arguments %>%
-    filter(left != right) %>%
-    mutate(results = pmap(., partial(coco_tibble, works = works))),
-  results = nested_results %>%
-    unnest(cols = c(results)) %>%
-    mutate(
-      label = map2_chr(
-        x,
-        y,
-        ~ paste(format(.x, justify = "right", width = 10),
-                format(.y, justify = "left", width = 10))
-      )
-    ),
+    dynamic = cross(left, right, fdr, span_left, span_right)
+  ),
   results_csv = write_csv(results, path = "results.csv"),
   report = rmarkdown::render(
     knitr_in("report.Rmd"),
