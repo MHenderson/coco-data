@@ -7,33 +7,12 @@ plan <- drake_plan(
     "ArTs" = get_raw_text("ArTs"),
     "ChiLit" = get_raw_text("ChiLit")
   ),
-  works =  raw_text %>%
-    map(compose(unlist, compose(stri_extract_all_words, stri_trans_tolower))),
-  arguments = tibble(
-    left = names(works),
-    right = names(works)) %>%
-    expand(
-      left,
-      right,
-      fdr = c(0.01, 0.02),
-      span = cross2(1:5, 1:5) %>%
-        map(unlist) %>%
-        map_chr(to_span_string)
-    ),
-  nested_results = arguments %>%
-    filter(left != right) %>%
-    mutate(results = pmap(., partial(coco_tibble, works = works))),
-  results = nested_results %>%
-    unnest(cols = c(results)) %>%
-    mutate(
-      label = map2_chr(
-        x,
-        y,
-        ~ paste(format(.x, justify = "right", width = 10),
-                format(.y, justify = "left", width = 10))
-      )
-    ),
-  results_csv = write_csv(results, path = "results.csv"),
+  arguments_ = arguments_df(),
+  results_ = target(
+    go_coco(arguments_, raw_text),
+    dynamic = map(arguments_)
+  ),
+  results_csv = write_csv(results_, path = "results.csv"),
   report = rmarkdown::render(
     knitr_in("report.Rmd"),
     output_file = file_out("report.html"),
